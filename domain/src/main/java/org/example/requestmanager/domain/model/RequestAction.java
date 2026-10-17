@@ -1,5 +1,10 @@
 package org.example.requestmanager.domain.model;
 
 public enum RequestAction {
-    CREATE
+    CREATE,
+    VERIFY,
+    ACCEPT,
+    PUBLISH,
+    DELETE,
+    REJECT
 }
