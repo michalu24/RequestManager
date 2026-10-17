@@ -25,7 +25,14 @@ class RequestRootTest {
         assertThat(request.getContent()).isEqualTo("content");
         assertThat(request.getState()).isEqualTo(RequestState.CREATED);
         assertThat(request.getPublicationNumber()).isNull();
-        assertThat(request.getHistory()).isEmpty();
+    }
+
+    @Test
+    void recordsCreationInHistory() {
+        RequestRoot request = RequestRoot.create("name", "content", NOW);
+
+        assertThat(request.getHistory()).containsExactly(
+                new StateChange(null, RequestState.CREATED, RequestAction.CREATE, null, NOW));
     }
 
     @Test

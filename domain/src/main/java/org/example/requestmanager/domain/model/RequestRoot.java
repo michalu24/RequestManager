@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static org.example.requestmanager.domain.model.RequestAction.CREATE;
+import static org.example.requestmanager.domain.model.RequestState.CREATED;
+
 public class RequestRoot {
 
     private final RequestId id;
@@ -35,9 +38,9 @@ public class RequestRoot {
                 new RequestId(UUID.randomUUID()),
                 name,
                 content,
-                RequestState.CREATED,
+                CREATED,
                 null,
-                new ArrayList<>());
+                new ArrayList<>(List.of(new StateChange(null, CREATED, CREATE, null, now))));
     }
     public RequestId getId() {
         return id;
