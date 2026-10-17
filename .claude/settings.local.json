@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(.\\\\mvnw.cmd -q -B verify; \"EXIT: $LASTEXITCODE\")",
+      "PowerShell(Get-ChildItem \"$env:USERPROFILE\\\\.jdks\", \"C:\\\\Program Files\\\\Java\", \"C:\\\\Program Files\\\\Eclipse Adoptium\", \"C:\\\\Program Files\\\\JetBrains\" -Directory -ErrorAction SilentlyContinue | Select-Object FullName)",
+      "PowerShell($env:JAVA_HOME = \"$env:USERPROFILE\\\\.jdks\\\\ms-21.0.12.1\"; .\\\\mvnw.cmd -B verify | Select-String -Pattern \"Reactor Summary|SUCCESS|FAILURE|ERROR|Tests run:|BUILD\" ; \"EXIT: $LASTEXITCODE\")",
+      "PowerShell(Get-ChildItem \"$env:USERPROFILE\\\\.jdks\\\\ms-21.0.12.1\" | Select-Object Name; Test-Path \"$env:USERPROFILE\\\\.jdks\\\\ms-21.0.12.1\\\\bin\\\\java.exe\")",
+      "PowerShell(foreach \\($d in \"$env:USERPROFILE\\\\.jdks\\\\jbr-21.0.11\", \"$env:USERPROFILE\\\\.jdks\\\\openjdk-26.0.2.1\", \"C:\\\\Program Files\\\\JetBrains\\\\IntelliJ IDEA 2026.2.1\\\\jbr\"\\) { \"$d -> \" + \\(Test-Path \"$d\\\\bin\\\\java.exe\"\\) }; \\(Get-ChildItem \"$env:USERPROFILE\\\\.jdks\\\\ms-21.0.12.1\" -Force -ErrorAction SilentlyContinue | Measure-Object\\).Count)"
+    ]
+  }
+}
