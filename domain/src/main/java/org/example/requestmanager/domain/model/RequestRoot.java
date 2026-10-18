@@ -1,6 +1,7 @@
 package org.example.requestmanager.domain.model;
 
 import org.example.requestmanager.domain.exception.ContentNotEditableException;
+import org.example.requestmanager.domain.exception.FieldTooLongException;
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
 import org.example.requestmanager.domain.exception.ReasonRequiredException;
 import org.example.requestmanager.domain.exception.RequiredFieldMissingException;
@@ -23,6 +24,8 @@ import static org.example.requestmanager.domain.model.RequestState.CREATED;
 import static org.example.requestmanager.domain.model.RequestState.VERIFIED;
 
 public class RequestRoot {
+
+    public static final int MAX_NAME_LENGTH = 255;
 
     private static final Set<RequestState> EDITABLE_STATES = Set.of(CREATED, VERIFIED);
 
@@ -52,6 +55,9 @@ public class RequestRoot {
 
     public static RequestRoot create(String name, String content, TransitionPolicy transitionPolicy, Instant now) {
         requireNotBlank(name, "name");
+        if (name.length() > MAX_NAME_LENGTH) {
+            throw new FieldTooLongException("name", MAX_NAME_LENGTH);
+        }
         requireNotBlank(content, "content");
         Objects.requireNonNull(transitionPolicy);
         return new RequestRoot(

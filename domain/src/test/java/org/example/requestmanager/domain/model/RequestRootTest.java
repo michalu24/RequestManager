@@ -1,6 +1,7 @@
 package org.example.requestmanager.domain.model;
 
 import org.example.requestmanager.domain.exception.ContentNotEditableException;
+import org.example.requestmanager.domain.exception.FieldTooLongException;
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
 import org.example.requestmanager.domain.exception.ReasonRequiredException;
 import org.example.requestmanager.domain.exception.RequiredFieldMissingException;
@@ -67,6 +68,25 @@ class RequestRootTest {
     @ValueSource(strings = {"", "   "})
     void rejectsBlankContent(String content) {
         assertRequiredFieldMissing(() -> RequestRoot.create("name", content, POLICY, NOW), "content");
+    }
+
+    @Test
+    void acceptsNameOfMaximumLength() {
+        String name = "a".repeat(RequestRoot.MAX_NAME_LENGTH);
+
+        assertThat(RequestRoot.create(name, "content", POLICY, NOW).getName()).isEqualTo(name);
+    }
+
+    @Test
+    void rejectsTooLongName() {
+        String name = "a".repeat(RequestRoot.MAX_NAME_LENGTH + 1);
+
+        assertThatThrownBy(() -> RequestRoot.create(name, "content", POLICY, NOW))
+                .isInstanceOfSatisfying(FieldTooLongException.class, e -> {
+                    assertThat(e.getField()).isEqualTo("name");
+                    assertThat(e.getMaxLength()).isEqualTo(255);
+                })
+                .hasMessage("name must not be longer than 255 characters");
     }
 
     @Test

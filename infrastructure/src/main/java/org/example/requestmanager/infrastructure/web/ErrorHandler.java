@@ -3,6 +3,7 @@ package org.example.requestmanager.infrastructure.web;
 import org.example.requestmanager.application.exception.InvalidPageRequestException;
 import org.example.requestmanager.application.exception.RequestNotFoundException;
 import org.example.requestmanager.domain.exception.ContentNotEditableException;
+import org.example.requestmanager.domain.exception.FieldTooLongException;
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
 import org.example.requestmanager.domain.exception.ReasonRequiredException;
 import org.example.requestmanager.domain.exception.RequestDomainException;
@@ -15,7 +16,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 /**
  * Maps domain and application exceptions to RFC 9457 problem details.
- * 400 - the client sent incomplete data or invalid paging parameters,
+ * 400 - the client sent incomplete or too long data, or invalid paging parameters,
  * 404 - the request does not exist,
  * 409 - the data is valid but conflicts with the current state of the request,
  * 422 - any other business rule violation.
@@ -33,6 +34,14 @@ class ErrorHandler extends ResponseEntityExceptionHandler {
     ProblemDetail handle(RequiredFieldMissingException e) {
         ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, e);
         problem.setProperty("field", e.getField());
+        return problem;
+    }
+
+    @ExceptionHandler
+    ProblemDetail handle(FieldTooLongException e) {
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, e);
+        problem.setProperty("field", e.getField());
+        problem.setProperty("maxLength", e.getMaxLength());
         return problem;
     }
 
