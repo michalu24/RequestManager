@@ -167,6 +167,35 @@ class RequestApiIntegrationTest {
                 .jsonPath("$.id").isEqualTo(unknown.toString());
     }
 
+    // browsing
+
+    @Test
+    void browsesRequestsByNameAndStatePageByPage() {
+        // unique token keeps this test independent of requests created by other tests
+        String token = UUID.randomUUID().toString();
+        for (int i = 1; i <= 3; i++) {
+            UUID id = create(token + " invoice " + i, "content");
+            transition(id, Map.of("action", "VERIFY"));
+        }
+        create(token + " invoice 4", "content");
+        create(token + " order", "content");
+
+        client.get().uri("/requests?name={name}&state=VERIFIED&size=2", token + " INVOICE").exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.items.length()").isEqualTo(2)
+                .jsonPath("$.items[0].name").isEqualTo(token + " invoice 1")
+                .jsonPath("$.items[1].name").isEqualTo(token + " invoice 2")
+                .jsonPath("$.totalElements").isEqualTo(3)
+                .jsonPath("$.totalPages").isEqualTo(2);
+
+        client.get().uri("/requests?name={name}&state=VERIFIED&size=2&page=1", token).exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.items.length()").isEqualTo(1)
+                .jsonPath("$.items[0].name").isEqualTo(token + " invoice 3");
+    }
+
     // helpers
 
     private UUID create(String name, String content) {

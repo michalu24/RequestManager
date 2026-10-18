@@ -1,14 +1,20 @@
 package org.example.requestmanager.infrastructure.web;
 
+import org.example.requestmanager.application.port.in.BrowseRequestsQuery;
 import org.example.requestmanager.application.port.in.ChangeRequestStateUseCase;
 import org.example.requestmanager.application.port.in.CreateRequestUseCase;
 import org.example.requestmanager.application.port.in.EditRequestContentUseCase;
 import org.example.requestmanager.application.port.in.GetRequestQuery;
+import org.example.requestmanager.application.port.in.PageQuery;
+import org.example.requestmanager.application.port.in.RequestFilter;
 import org.example.requestmanager.domain.model.RequestId;
 import org.example.requestmanager.domain.model.RequestRoot;
+import org.example.requestmanager.domain.model.RequestState;
 import org.example.requestmanager.infrastructure.web.dto.CreateRequestBody;
 import org.example.requestmanager.infrastructure.web.dto.EditContentBody;
+import org.example.requestmanager.infrastructure.web.dto.PageResponse;
 import org.example.requestmanager.infrastructure.web.dto.RequestResponse;
+import org.example.requestmanager.infrastructure.web.dto.RequestSummaryResponse;
 import org.example.requestmanager.infrastructure.web.dto.StateChangeResponse;
 import org.example.requestmanager.infrastructure.web.dto.TransitionBody;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -33,15 +40,28 @@ class RequestController {
     private final EditRequestContentUseCase editRequestContent;
     private final ChangeRequestStateUseCase changeRequestState;
     private final GetRequestQuery getRequest;
+    private final BrowseRequestsQuery browseRequests;
 
     RequestController(CreateRequestUseCase createRequest,
                       EditRequestContentUseCase editRequestContent,
                       ChangeRequestStateUseCase changeRequestState,
-                      GetRequestQuery getRequest) {
+                      GetRequestQuery getRequest,
+                      BrowseRequestsQuery browseRequests) {
         this.createRequest = createRequest;
         this.editRequestContent = editRequestContent;
         this.changeRequestState = changeRequestState;
         this.getRequest = getRequest;
+        this.browseRequests = browseRequests;
+    }
+
+    @GetMapping
+    PageResponse<RequestSummaryResponse> browse(@RequestParam(required = false) String name,
+                                                @RequestParam(required = false) RequestState state,
+                                                @RequestParam(defaultValue = "0") int page,
+                                                @RequestParam(defaultValue = "" + PageQuery.DEFAULT_SIZE) int size) {
+        return PageResponse.from(
+                browseRequests.browse(new RequestFilter(name, state), new PageQuery(page, size)),
+                RequestSummaryResponse::from);
     }
 
     @PostMapping

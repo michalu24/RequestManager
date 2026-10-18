@@ -4,6 +4,10 @@ import org.example.requestmanager.application.port.in.ChangeRequestStateUseCase;
 import org.example.requestmanager.application.port.in.CreateRequestUseCase;
 import org.example.requestmanager.application.port.in.EditRequestContentUseCase;
 import org.example.requestmanager.application.port.in.GetRequestQuery;
+import org.example.requestmanager.application.port.in.PageQuery;
+import org.example.requestmanager.application.port.in.PageResult;
+import org.example.requestmanager.application.port.in.RequestFilter;
+import org.example.requestmanager.application.port.in.RequestSummary;
 import org.example.requestmanager.domain.model.RequestAction;
 import org.example.requestmanager.domain.model.RequestId;
 import org.example.requestmanager.domain.model.RequestRoot;
@@ -14,6 +18,7 @@ import org.springframework.transaction.support.AbstractPlatformTransactionManage
 import org.springframework.transaction.support.DefaultTransactionStatus;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,6 +65,16 @@ class TransactionalRequestServiceTest {
     }
 
     @Test
+    void browseRunsInReadOnlyTransaction() {
+        PageResult<RequestSummary> page = new PageResult<>(List.of(), 0, 10, 0);
+        var service = new TransactionalRequestService(null, null, null, null,
+                (filter, query) -> page, transactionManager);
+
+        assertThat(service.browse(new RequestFilter(null, null), new PageQuery(0, 10))).isSameAs(page);
+        assertCommittedOnce(true);
+    }
+
+    @Test
     void rollsBackAndRethrowsWhenUseCaseFails() {
         var failure = new IllegalStateException("boom");
         var service = serviceWith(null, null, (id, action, reason) -> { throw failure; }, null);
@@ -73,7 +88,7 @@ class TransactionalRequestServiceTest {
                                                     EditRequestContentUseCase edit,
                                                     ChangeRequestStateUseCase changeState,
                                                     GetRequestQuery get) {
-        return new TransactionalRequestService(create, edit, changeState, get, transactionManager);
+        return new TransactionalRequestService(create, edit, changeState, get, null, transactionManager);
     }
 
     private void assertCommittedOnce(boolean readOnly) {

@@ -1,10 +1,15 @@
 package org.example.requestmanager.application.service;
 
 import org.example.requestmanager.application.exception.RequestNotFoundException;
+import org.example.requestmanager.application.port.in.BrowseRequestsQuery;
 import org.example.requestmanager.application.port.in.ChangeRequestStateUseCase;
 import org.example.requestmanager.application.port.in.CreateRequestUseCase;
 import org.example.requestmanager.application.port.in.EditRequestContentUseCase;
 import org.example.requestmanager.application.port.in.GetRequestQuery;
+import org.example.requestmanager.application.port.in.PageQuery;
+import org.example.requestmanager.application.port.in.PageResult;
+import org.example.requestmanager.application.port.in.RequestFilter;
+import org.example.requestmanager.application.port.in.RequestSummary;
 import org.example.requestmanager.application.port.out.PublicationNumberGenerator;
 import org.example.requestmanager.application.port.out.RequestRepository;
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
@@ -20,7 +25,8 @@ public class RequestService implements
         CreateRequestUseCase,
         EditRequestContentUseCase,
         ChangeRequestStateUseCase,
-        GetRequestQuery {
+        GetRequestQuery,
+        BrowseRequestsQuery {
 
     private final RequestRepository repository;
     private final PublicationNumberGenerator publicationNumberGenerator;
@@ -68,6 +74,11 @@ public class RequestService implements
     @Override
     public RequestRoot get(RequestId id) {
         return load(id);
+    }
+
+    @Override
+    public PageResult<RequestSummary> browse(RequestFilter filter, PageQuery page) {
+        return repository.search(filter, page);
     }
 
     private RequestRoot load(RequestId id) {

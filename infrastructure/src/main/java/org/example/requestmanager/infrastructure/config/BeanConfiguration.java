@@ -36,6 +36,6 @@ public class BeanConfiguration {
                                                 Clock clock,
                                                 PlatformTransactionManager transactionManager) {
         RequestService service = new RequestService(repository, publicationNumberGenerator, transitionPolicy, clock);
-        return new TransactionalRequestService(service, service, service, service, transactionManager);
+        return new TransactionalRequestService(service, service, service, service, service, transactionManager);
     }
 }
