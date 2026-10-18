@@ -7,7 +7,6 @@ import org.example.requestmanager.domain.model.RequestState;
 import org.example.requestmanager.domain.transition.DiagramTransitionPolicy;
 import org.example.requestmanager.domain.transition.TransitionPolicy;
 import org.example.requestmanager.infrastructure.TestcontainersConfiguration;
-import org.example.requestmanager.infrastructure.config.BeanConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -22,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({TestcontainersConfiguration.class, BeanConfiguration.class, RequestPersistenceAdapter.class})
+@Import({TestcontainersConfiguration.class, DiagramTransitionPolicy.class, RequestPersistenceAdapter.class})
 class RequestPersistenceAdapterTest {
 
     // Postgres stores microseconds, so test timestamps avoid nanosecond precision
