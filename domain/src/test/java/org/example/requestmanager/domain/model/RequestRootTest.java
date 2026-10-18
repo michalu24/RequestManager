@@ -200,6 +200,45 @@ class RequestRootTest {
         assertReasonRequired(request, () -> request.reject(reason, LATER), RequestAction.REJECT);
     }
 
+    // publish
+
+    @Test
+    void publishMovesAcceptedRequestToPublishedWithNumber() {
+        RequestRoot request = newRequest();
+        request.verify(NOW);
+        request.accept(NOW);
+
+        request.publish(new PublicationNumber(42), LATER);
+
+        assertThat(request.getState()).isEqualTo(RequestState.PUBLISHED);
+        assertThat(request.getPublicationNumber()).isEqualTo(new PublicationNumber(42));
+        assertThat(request.getHistory()).last().isEqualTo(
+                new StateChange(RequestState.ACCEPTED, RequestState.PUBLISHED, RequestAction.PUBLISH, null, LATER));
+    }
+
+    @Test
+    void publishIsRejectedOutsideAcceptedStateAndAssignsNoNumber() {
+        RequestRoot request = newRequest();
+        request.verify(NOW);
+
+        assertInvalidTransition(request, () -> request.publish(new PublicationNumber(42), LATER),
+                RequestState.VERIFIED, RequestAction.PUBLISH);
+        assertThat(request.getPublicationNumber()).isNull();
+    }
+
+    @Test
+    void publishRequiresNumber() {
+        RequestRoot request = newRequest();
+        request.verify(NOW);
+        request.accept(NOW);
+        var historyBefore = request.getHistory();
+
+        assertThatThrownBy(() -> request.publish(null, LATER))
+                .isInstanceOf(NullPointerException.class);
+        assertThat(request.getState()).isEqualTo(RequestState.ACCEPTED);
+        assertThat(request.getHistory()).isEqualTo(historyBefore);
+    }
+
     // policy
 
     @Test
@@ -217,13 +256,6 @@ class RequestRootTest {
         RequestRoot request = newRequest();
 
         assertNotImplemented(() -> request.editContent("new content"));
-    }
-
-    @Test
-    void publishIsNotImplemented() {
-        RequestRoot request = newRequest();
-
-        assertNotImplemented(() -> request.publish(new PublicationNumber(), NOW));
     }
 
     private static RequestRoot newRequest() {
