@@ -2,7 +2,7 @@ package org.example.requestmanager.domain.exception;
 
 import org.example.requestmanager.domain.model.RequestAction;
 
-public class ReasonRequiredException extends RuntimeException {
+public class ReasonRequiredException extends RequestDomainException {
 
     private final RequestAction action;
 

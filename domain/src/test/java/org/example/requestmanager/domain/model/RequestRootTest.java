@@ -3,6 +3,7 @@ package org.example.requestmanager.domain.model;
 import org.example.requestmanager.domain.exception.ContentNotEditableException;
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
 import org.example.requestmanager.domain.exception.ReasonRequiredException;
+import org.example.requestmanager.domain.exception.RequiredFieldMissingException;
 import org.example.requestmanager.domain.transition.DiagramTransitionPolicy;
 import org.example.requestmanager.domain.transition.TransitionPolicy;
 import org.junit.jupiter.api.Test;
@@ -56,18 +57,14 @@ class RequestRootTest {
     @NullSource
     @ValueSource(strings = {"", "   "})
     void rejectsBlankName(String name) {
-        assertThatThrownBy(() -> RequestRoot.create(name, "content", POLICY, NOW))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("name must not be blank");
+        assertRequiredFieldMissing(() -> RequestRoot.create(name, "content", POLICY, NOW), "name");
     }
 
     @ParameterizedTest
     @NullSource
     @ValueSource(strings = {"", "   "})
     void rejectsBlankContent(String content) {
-        assertThatThrownBy(() -> RequestRoot.create("name", content, POLICY, NOW))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("content must not be blank");
+        assertRequiredFieldMissing(() -> RequestRoot.create("name", content, POLICY, NOW), "content");
     }
 
     @Test
@@ -283,9 +280,7 @@ class RequestRootTest {
     void refusesBlankContentOnEdit(String content) {
         RequestRoot request = newRequest();
 
-        assertThatThrownBy(() -> request.editContent(content))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("content must not be blank");
+        assertRequiredFieldMissing(() -> request.editContent(content), "content");
         assertThat(request.getContent()).isEqualTo("content");
     }
 
@@ -314,6 +309,13 @@ class RequestRootTest {
             }
         }
         return request;
+    }
+
+    private static void assertRequiredFieldMissing(Runnable action, String expectedField) {
+        assertThatThrownBy(action::run)
+                .isInstanceOfSatisfying(RequiredFieldMissingException.class,
+                        e -> assertThat(e.getField()).isEqualTo(expectedField))
+                .hasMessage(expectedField + " must not be blank");
     }
 
     private static void assertReasonRequired(RequestRoot request, Runnable action, RequestAction expectedAction) {
