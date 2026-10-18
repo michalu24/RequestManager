@@ -13,6 +13,7 @@ import java.util.UUID;
 import static org.example.requestmanager.domain.model.RequestAction.ACCEPT;
 import static org.example.requestmanager.domain.model.RequestAction.CREATE;
 import static org.example.requestmanager.domain.model.RequestAction.DELETE;
+import static org.example.requestmanager.domain.model.RequestAction.PUBLISH;
 import static org.example.requestmanager.domain.model.RequestAction.REJECT;
 import static org.example.requestmanager.domain.model.RequestAction.VERIFY;
 import static org.example.requestmanager.domain.model.RequestState.CREATED;
@@ -99,7 +100,9 @@ public class RequestRoot {
     }
 
     public void publish(PublicationNumber number, Instant now) {
-        throw new RuntimeException("Not Implemented");
+        Objects.requireNonNull(number);
+        transition(PUBLISH, null, now);
+        publicationNumber = number;
     }
 
     public void delete(String reason, Instant now) {
