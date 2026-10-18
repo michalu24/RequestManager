@@ -13,7 +13,9 @@ import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -81,6 +83,43 @@ class RequestRootTest {
 
         assertThatThrownBy(() -> request.getHistory().clear())
                 .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    // restore
+
+    @Test
+    void restoresPersistedStateWithoutAddingHistory() {
+        RequestId id = new RequestId(UUID.randomUUID());
+        List<StateChange> history = List.of(
+                new StateChange(null, RequestState.CREATED, RequestAction.CREATE, null, NOW),
+                new StateChange(RequestState.CREATED, RequestState.VERIFIED, RequestAction.VERIFY, null, LATER));
+
+        RequestRoot request = RequestRoot.restore(id, "name", "content", RequestState.VERIFIED, null, history, POLICY);
+
+        assertThat(request.getId()).isEqualTo(id);
+        assertThat(request.getName()).isEqualTo("name");
+        assertThat(request.getContent()).isEqualTo("content");
+        assertThat(request.getState()).isEqualTo(RequestState.VERIFIED);
+        assertThat(request.getPublicationNumber()).isNull();
+        assertThat(request.getHistory()).isEqualTo(history);
+    }
+
+    @Test
+    void restoredRequestContinuesItsLifecycle() {
+        RequestRoot request = RequestRoot.restore(new RequestId(UUID.randomUUID()), "name", "content",
+                RequestState.VERIFIED, null, List.of(), POLICY);
+
+        request.accept(LATER);
+
+        assertThat(request.getState()).isEqualTo(RequestState.ACCEPTED);
+        assertThat(request.getHistory()).hasSize(1);
+    }
+
+    @Test
+    void restoreRequiresTransitionPolicy() {
+        assertThatThrownBy(() -> RequestRoot.restore(new RequestId(UUID.randomUUID()), "name", "content",
+                RequestState.CREATED, null, List.of(), null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     // verify

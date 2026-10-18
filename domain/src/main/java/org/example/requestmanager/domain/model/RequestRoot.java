@@ -63,6 +63,28 @@ public class RequestRoot {
                 new ArrayList<>(List.of(new StateChange(null, CREATED, CREATE, null, now))),
                 transitionPolicy);
     }
+
+    /**
+     * Rebuilds a request from persisted state. No business validation is applied
+     * and no history entry is added.
+     */
+    public static RequestRoot restore(RequestId id,
+                                      String name,
+                                      String content,
+                                      RequestState state,
+                                      PublicationNumber publicationNumber,
+                                      List<StateChange> history,
+                                      TransitionPolicy transitionPolicy) {
+        return new RequestRoot(
+                Objects.requireNonNull(id),
+                Objects.requireNonNull(name),
+                Objects.requireNonNull(content),
+                Objects.requireNonNull(state),
+                publicationNumber,
+                new ArrayList<>(history),
+                Objects.requireNonNull(transitionPolicy));
+    }
+
     public RequestId getId() {
         return id;
     }
