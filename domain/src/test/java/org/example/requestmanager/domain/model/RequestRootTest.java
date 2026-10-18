@@ -1,11 +1,13 @@
 package org.example.requestmanager.domain.model;
 
+import org.example.requestmanager.domain.exception.ContentNotEditableException;
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
 import org.example.requestmanager.domain.exception.ReasonRequiredException;
 import org.example.requestmanager.domain.transition.DiagramTransitionPolicy;
 import org.example.requestmanager.domain.transition.TransitionPolicy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -249,17 +251,69 @@ class RequestRootTest {
         assertInvalidTransition(request, () -> request.verify(LATER), RequestState.CREATED, RequestAction.VERIFY);
     }
 
-    // stubs - these tests fail on purpose once a method gets implemented
+    // edit content
 
-    @Test
-    void editContentIsNotImplemented() {
+    @ParameterizedTest
+    @EnumSource(value = RequestState.class, names = {"CREATED", "VERIFIED"})
+    void editsContentInEditableState(RequestState state) {
+        RequestRoot request = requestIn(state);
+        var historyBefore = request.getHistory();
+
+        request.editContent("new content");
+
+        assertThat(request.getContent()).isEqualTo("new content");
+        assertThat(request.getState()).isEqualTo(state);
+        assertThat(request.getHistory()).isEqualTo(historyBefore);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = RequestState.class, names = {"ACCEPTED", "PUBLISHED", "DELETED", "REJECTED"})
+    void refusesToEditContentInOtherStates(RequestState state) {
+        RequestRoot request = requestIn(state);
+
+        assertThatThrownBy(() -> request.editContent("new content"))
+                .isInstanceOfSatisfying(ContentNotEditableException.class,
+                        e -> assertThat(e.getState()).isEqualTo(state));
+        assertThat(request.getContent()).isEqualTo("content");
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "   "})
+    void refusesBlankContentOnEdit(String content) {
         RequestRoot request = newRequest();
 
-        assertNotImplemented(() -> request.editContent("new content"));
+        assertThatThrownBy(() -> request.editContent(content))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("content must not be blank");
+        assertThat(request.getContent()).isEqualTo("content");
     }
 
     private static RequestRoot newRequest() {
         return RequestRoot.create("name", "content", POLICY, NOW);
+    }
+
+    private static RequestRoot requestIn(RequestState state) {
+        RequestRoot request = newRequest();
+        switch (state) {
+            case CREATED -> { }
+            case VERIFIED -> request.verify(NOW);
+            case ACCEPTED -> {
+                request.verify(NOW);
+                request.accept(NOW);
+            }
+            case PUBLISHED -> {
+                request.verify(NOW);
+                request.accept(NOW);
+                request.publish(new PublicationNumber(1), NOW);
+            }
+            case DELETED -> request.delete("reason", NOW);
+            case REJECTED -> {
+                request.verify(NOW);
+                request.reject("reason", NOW);
+            }
+        }
+        return request;
     }
 
     private static void assertReasonRequired(RequestRoot request, Runnable action, RequestAction expectedAction) {
@@ -286,11 +340,5 @@ class RequestRootTest {
                 });
         assertThat(request.getState()).isEqualTo(expectedFrom);
         assertThat(request.getHistory()).isEqualTo(historyBefore);
-    }
-
-    private static void assertNotImplemented(Runnable action) {
-        assertThatThrownBy(action::run)
-                .isExactlyInstanceOf(RuntimeException.class)
-                .hasMessage("Not Implemented");
     }
 }
