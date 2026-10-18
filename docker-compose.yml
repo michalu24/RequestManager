@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: requestmanager
+      POSTGRES_USER: requestmanager
+      POSTGRES_PASSWORD: requestmanager
+    ports:
+      - "5432:5432"
