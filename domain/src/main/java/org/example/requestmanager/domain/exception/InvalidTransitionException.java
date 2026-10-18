@@ -3,7 +3,7 @@ package org.example.requestmanager.domain.exception;
 import org.example.requestmanager.domain.model.RequestAction;
 import org.example.requestmanager.domain.model.RequestState;
 
-public class  InvalidTransitionException extends RuntimeException {
+public class InvalidTransitionException extends RequestDomainException {
 
     private final RequestState from;
     private final RequestAction action;

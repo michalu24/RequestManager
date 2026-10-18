@@ -3,6 +3,7 @@ package org.example.requestmanager.domain.model;
 import org.example.requestmanager.domain.exception.ContentNotEditableException;
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
 import org.example.requestmanager.domain.exception.ReasonRequiredException;
+import org.example.requestmanager.domain.exception.RequiredFieldMissingException;
 import org.example.requestmanager.domain.transition.TransitionPolicy;
 
 import java.time.Instant;
@@ -88,7 +89,7 @@ public class RequestRoot {
 
     private static void requireNotBlank(String value, String field) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(field + " must not be blank");
+            throw new RequiredFieldMissingException(field);
         }
     }
 

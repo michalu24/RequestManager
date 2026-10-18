@@ -2,7 +2,7 @@ package org.example.requestmanager.domain.exception;
 
 import org.example.requestmanager.domain.model.RequestState;
 
-public class ContentNotEditableException extends RuntimeException {
+public class ContentNotEditableException extends RequestDomainException {
 
     private final RequestState state;
 
