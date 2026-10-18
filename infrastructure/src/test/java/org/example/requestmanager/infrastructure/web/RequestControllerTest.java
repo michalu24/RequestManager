@@ -1,13 +1,19 @@
 package org.example.requestmanager.infrastructure.web;
 
+import org.example.requestmanager.application.port.in.BrowseRequestsQuery;
 import org.example.requestmanager.application.port.in.ChangeRequestStateUseCase;
 import org.example.requestmanager.application.port.in.CreateRequestUseCase;
 import org.example.requestmanager.application.port.in.EditRequestContentUseCase;
 import org.example.requestmanager.application.port.in.GetRequestQuery;
+import org.example.requestmanager.application.port.in.PageQuery;
+import org.example.requestmanager.application.port.in.PageResult;
+import org.example.requestmanager.application.port.in.RequestFilter;
+import org.example.requestmanager.application.port.in.RequestSummary;
 import org.example.requestmanager.domain.model.PublicationNumber;
 import org.example.requestmanager.domain.model.RequestAction;
 import org.example.requestmanager.domain.model.RequestId;
 import org.example.requestmanager.domain.model.RequestRoot;
+import org.example.requestmanager.domain.model.RequestState;
 import org.example.requestmanager.domain.transition.DiagramTransitionPolicy;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +23,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.nullValue;
@@ -51,6 +59,45 @@ class RequestControllerTest {
 
     @MockitoBean
     private GetRequestQuery getRequest;
+
+    @MockitoBean
+    private BrowseRequestsQuery browseRequests;
+
+    @Test
+    void browsesWithDefaultPaging() throws Exception {
+        RequestSummary summary = new RequestSummary(
+                new RequestId(UUID.randomUUID()), "name", RequestState.PUBLISHED, new PublicationNumber(3));
+        when(browseRequests.browse(any(), any())).thenReturn(new PageResult<>(List.of(summary), 0, 10, 11));
+
+        mockMvc.perform(get("/requests"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(summary.id().id().toString()))
+                .andExpect(jsonPath("$.items[0].name").value("name"))
+                .andExpect(jsonPath("$.items[0].state").value("PUBLISHED"))
+                .andExpect(jsonPath("$.items[0].publicationNumber").value(3))
+                .andExpect(jsonPath("$.items[0].content").doesNotExist())
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(11))
+                .andExpect(jsonPath("$.totalPages").value(2));
+
+        verify(browseRequests).browse(new RequestFilter(null, null), new PageQuery(0, PageQuery.DEFAULT_SIZE));
+    }
+
+    @Test
+    void passesFilterAndPagingParameters() throws Exception {
+        when(browseRequests.browse(any(), any())).thenReturn(new PageResult<>(List.of(), 2, 5, 0));
+
+        mockMvc.perform(get("/requests")
+                        .param("name", "inv")
+                        .param("state", "VERIFIED")
+                        .param("page", "2")
+                        .param("size", "5"))
+                .andExpect(status().isOk());
+
+        verify(browseRequests).browse(new RequestFilter("inv", RequestState.VERIFIED), new PageQuery(2, 5));
+    }
 
     @Test
     void createsRequest() throws Exception {

@@ -1,6 +1,7 @@
 package org.example.requestmanager.infrastructure.web;
 
 import org.example.requestmanager.application.exception.RequestNotFoundException;
+import org.example.requestmanager.application.port.in.BrowseRequestsQuery;
 import org.example.requestmanager.application.port.in.ChangeRequestStateUseCase;
 import org.example.requestmanager.application.port.in.CreateRequestUseCase;
 import org.example.requestmanager.application.port.in.EditRequestContentUseCase;
@@ -23,6 +24,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -52,6 +54,30 @@ class ErrorHandlerTest {
 
     @MockitoBean
     private GetRequestQuery getRequest;
+
+    @MockitoBean
+    private BrowseRequestsQuery browseRequests;
+
+    // paging
+
+    @Test
+    void pageSizeOutOfRangeIsBadRequest() throws Exception {
+        expectProblem(mockMvc.perform(get("/requests").param("size", "101")), 400)
+                .andExpect(jsonPath("$.detail").value(containsString("size between 1 and 100")));
+        verifyNoInteractions(browseRequests);
+    }
+
+    @Test
+    void negativePageIsBadRequest() throws Exception {
+        expectProblem(mockMvc.perform(get("/requests").param("page", "-1")), 400);
+        verifyNoInteractions(browseRequests);
+    }
+
+    @Test
+    void unknownStateFilterIsBadRequest() throws Exception {
+        expectProblem(mockMvc.perform(get("/requests").param("state", "FOO")), 400);
+        verifyNoInteractions(browseRequests);
+    }
 
     // domain and application exceptions
 

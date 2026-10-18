@@ -1,6 +1,10 @@
 package org.example.requestmanager.application.service;
 
 import org.example.requestmanager.application.exception.RequestNotFoundException;
+import org.example.requestmanager.application.port.in.PageQuery;
+import org.example.requestmanager.application.port.in.PageResult;
+import org.example.requestmanager.application.port.in.RequestFilter;
+import org.example.requestmanager.application.port.in.RequestSummary;
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
 import org.example.requestmanager.domain.exception.ReasonRequiredException;
 import org.example.requestmanager.domain.exception.RequiredFieldMissingException;
@@ -154,6 +158,37 @@ class RequestServiceTest {
     @Test
     void changeStateFailsForUnknownRequest() {
         assertNotFound(() -> service.changeState(UNKNOWN_ID, RequestAction.VERIFY, null));
+    }
+
+    // browse
+
+    @Test
+    void browsesRequestsMatchingFilter() {
+        service.create("Invoice B", "content");
+        RequestRoot verified = service.create("invoice A", "content");
+        service.changeState(verified.getId(), RequestAction.VERIFY, null);
+        service.create("Order", "content");
+
+        PageResult<RequestSummary> byName = service.browse(new RequestFilter("INVOICE", null), new PageQuery(0, 10));
+        PageResult<RequestSummary> byNameAndState =
+                service.browse(new RequestFilter("invoice", RequestState.VERIFIED), new PageQuery(0, 10));
+
+        assertThat(byName.items()).extracting(RequestSummary::name).containsExactly("Invoice B", "invoice A");
+        assertThat(byNameAndState.items()).singleElement()
+                .satisfies(summary -> assertThat(summary.id()).isEqualTo(verified.getId()));
+    }
+
+    @Test
+    void browsesRequestsPageByPage() {
+        for (int i = 0; i < 5; i++) {
+            service.create("request " + i, "content");
+        }
+
+        PageResult<RequestSummary> secondPage = service.browse(new RequestFilter(null, null), new PageQuery(1, 2));
+
+        assertThat(secondPage.items()).extracting(RequestSummary::name).containsExactly("request 2", "request 3");
+        assertThat(secondPage.totalElements()).isEqualTo(5);
+        assertThat(secondPage.totalPages()).isEqualTo(3);
     }
 
     private RequestRoot acceptedRequest() {

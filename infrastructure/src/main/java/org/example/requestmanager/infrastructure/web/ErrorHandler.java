@@ -1,5 +1,6 @@
 package org.example.requestmanager.infrastructure.web;
 
+import org.example.requestmanager.application.exception.InvalidPageRequestException;
 import org.example.requestmanager.application.exception.RequestNotFoundException;
 import org.example.requestmanager.domain.exception.ContentNotEditableException;
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
@@ -14,7 +15,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 /**
  * Maps domain and application exceptions to RFC 9457 problem details.
- * 400 - the client sent incomplete data,
+ * 400 - the client sent incomplete data or invalid paging parameters,
  * 404 - the request does not exist,
  * 409 - the data is valid but conflicts with the current state of the request,
  * 422 - any other business rule violation.
@@ -22,6 +23,11 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
  */
 @RestControllerAdvice
 class ErrorHandler extends ResponseEntityExceptionHandler {
+
+    @ExceptionHandler
+    ProblemDetail handle(InvalidPageRequestException e) {
+        return problem(HttpStatus.BAD_REQUEST, e);
+    }
 
     @ExceptionHandler
     ProblemDetail handle(RequiredFieldMissingException e) {

@@ -1,6 +1,7 @@
 package org.example.requestmanager.infrastructure;
 
 import org.example.requestmanager.application.exception.RequestNotFoundException;
+import org.example.requestmanager.application.port.in.BrowseRequestsQuery;
 import org.example.requestmanager.application.port.in.ChangeRequestStateUseCase;
 import org.example.requestmanager.application.port.in.CreateRequestUseCase;
 import org.example.requestmanager.application.port.in.EditRequestContentUseCase;
@@ -44,7 +45,7 @@ class RequestUseCasesIntegrationTest {
     @Test
     void everyUseCasePortIsServedByTheTransactionalDecorator() {
         for (Class<?> port : new Class<?>[]{CreateRequestUseCase.class, EditRequestContentUseCase.class,
-                ChangeRequestStateUseCase.class, GetRequestQuery.class}) {
+                ChangeRequestStateUseCase.class, GetRequestQuery.class, BrowseRequestsQuery.class}) {
             assertThat(context.getBeansOfType(port).values())
                     .singleElement()
                     .isInstanceOf(TransactionalRequestService.class);
