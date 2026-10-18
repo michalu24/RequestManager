@@ -153,7 +153,6 @@ Errors follow [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem details
 
 ```json
 {
-  "type": "about:blank",
   "title": "Conflict",
   "status": 409,
   "detail": "Action PUBLISH is not allowed in state CREATED",
