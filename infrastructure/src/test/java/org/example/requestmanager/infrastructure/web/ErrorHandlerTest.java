@@ -7,6 +7,7 @@ import org.example.requestmanager.application.port.in.CreateRequestUseCase;
 import org.example.requestmanager.application.port.in.EditRequestContentUseCase;
 import org.example.requestmanager.application.port.in.GetRequestQuery;
 import org.example.requestmanager.domain.exception.ContentNotEditableException;
+import org.example.requestmanager.domain.exception.FieldTooLongException;
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
 import org.example.requestmanager.domain.exception.ReasonRequiredException;
 import org.example.requestmanager.domain.exception.RequestDomainException;
@@ -88,6 +89,16 @@ class ErrorHandlerTest {
         expectProblem(createRequest("{\"name\": \" \", \"content\": \"content\"}"), 400)
                 .andExpect(jsonPath("$.detail").value("name must not be blank"))
                 .andExpect(jsonPath("$.field").value("name"));
+    }
+
+    @Test
+    void tooLongFieldIsBadRequest() throws Exception {
+        when(createRequest.create(any(), any())).thenThrow(new FieldTooLongException("name", 255));
+
+        expectProblem(createRequest("{\"name\": \"long\", \"content\": \"content\"}"), 400)
+                .andExpect(jsonPath("$.detail").value("name must not be longer than 255 characters"))
+                .andExpect(jsonPath("$.field").value("name"))
+                .andExpect(jsonPath("$.maxLength").value(255));
     }
 
     @Test

@@ -105,6 +105,25 @@ class RequestApiIntegrationTest {
     }
 
     @Test
+    void refusesTooLongNameWithBadRequestInsteadOfDatabaseError() {
+        client.post().uri("/requests")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("name", "a".repeat(256), "content", "content"))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.field").isEqualTo("name")
+                .jsonPath("$.maxLength").isEqualTo(255);
+    }
+
+    @Test
+    void acceptsNameOfMaximumLength() {
+        UUID id = create("a".repeat(255), "content");
+
+        assertThat(get(id).name()).hasSize(255);
+    }
+
+    @Test
     void refusesDeletionWithoutReasonAndKeepsRequest() {
         UUID id = create("name", "content");
 
