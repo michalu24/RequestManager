@@ -1,6 +1,7 @@
 package org.example.requestmanager.domain.model;
 
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
+import org.example.requestmanager.domain.exception.ReasonRequiredException;
 import org.example.requestmanager.domain.transition.TransitionPolicy;
 
 import java.time.Instant;
@@ -11,6 +12,8 @@ import java.util.UUID;
 
 import static org.example.requestmanager.domain.model.RequestAction.ACCEPT;
 import static org.example.requestmanager.domain.model.RequestAction.CREATE;
+import static org.example.requestmanager.domain.model.RequestAction.DELETE;
+import static org.example.requestmanager.domain.model.RequestAction.REJECT;
 import static org.example.requestmanager.domain.model.RequestAction.VERIFY;
 import static org.example.requestmanager.domain.model.RequestState.CREATED;
 
@@ -98,11 +101,21 @@ public class RequestRoot {
     public void publish(PublicationNumber number, Instant now) {
         throw new RuntimeException("Not Implemented");
     }
+
     public void delete(String reason, Instant now) {
-        throw new RuntimeException("Not Implemented");
+        requireReason(reason, DELETE);
+        transition(DELETE, reason, now);
     }
+
     public void reject(String reason, Instant now) {
-        throw new RuntimeException("Not Implemented");
+        requireReason(reason, REJECT);
+        transition(REJECT, reason, now);
+    }
+
+    private static void requireReason(String reason, RequestAction action) {
+        if (reason == null || reason.isBlank()) {
+            throw new ReasonRequiredException(action);
+        }
     }
 
     private void transition(RequestAction action, String reason, Instant now) {

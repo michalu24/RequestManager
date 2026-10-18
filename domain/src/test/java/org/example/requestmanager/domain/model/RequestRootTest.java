@@ -1,6 +1,7 @@
 package org.example.requestmanager.domain.model;
 
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
+import org.example.requestmanager.domain.exception.ReasonRequiredException;
 import org.example.requestmanager.domain.transition.DiagramTransitionPolicy;
 import org.example.requestmanager.domain.transition.TransitionPolicy;
 import org.junit.jupiter.api.Test;
@@ -125,6 +126,80 @@ class RequestRootTest {
         assertInvalidTransition(request, () -> request.accept(LATER), RequestState.CREATED, RequestAction.ACCEPT);
     }
 
+    // delete
+
+    @Test
+    void deleteMovesCreatedRequestToDeletedWithReason() {
+        RequestRoot request = newRequest();
+
+        request.delete("duplicate", LATER);
+
+        assertThat(request.getState()).isEqualTo(RequestState.DELETED);
+        assertThat(request.getHistory()).last().isEqualTo(
+                new StateChange(RequestState.CREATED, RequestState.DELETED, RequestAction.DELETE, "duplicate", LATER));
+    }
+
+    @Test
+    void deleteIsRejectedOutsideCreatedState() {
+        RequestRoot request = newRequest();
+        request.verify(NOW);
+
+        assertInvalidTransition(request, () -> request.delete("duplicate", LATER), RequestState.VERIFIED, RequestAction.DELETE);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "   "})
+    void deleteRequiresReason(String reason) {
+        RequestRoot request = newRequest();
+
+        assertReasonRequired(request, () -> request.delete(reason, LATER), RequestAction.DELETE);
+    }
+
+    // reject
+
+    @Test
+    void rejectMovesVerifiedRequestToRejectedWithReason() {
+        RequestRoot request = newRequest();
+        request.verify(NOW);
+
+        request.reject("incomplete", LATER);
+
+        assertThat(request.getState()).isEqualTo(RequestState.REJECTED);
+        assertThat(request.getHistory()).last().isEqualTo(
+                new StateChange(RequestState.VERIFIED, RequestState.REJECTED, RequestAction.REJECT, "incomplete", LATER));
+    }
+
+    @Test
+    void rejectMovesAcceptedRequestToRejectedWithReason() {
+        RequestRoot request = newRequest();
+        request.verify(NOW);
+        request.accept(NOW);
+
+        request.reject("incomplete", LATER);
+
+        assertThat(request.getState()).isEqualTo(RequestState.REJECTED);
+        assertThat(request.getHistory()).last().isEqualTo(
+                new StateChange(RequestState.ACCEPTED, RequestState.REJECTED, RequestAction.REJECT, "incomplete", LATER));
+    }
+
+    @Test
+    void rejectIsRejectedInCreatedState() {
+        RequestRoot request = newRequest();
+
+        assertInvalidTransition(request, () -> request.reject("incomplete", LATER), RequestState.CREATED, RequestAction.REJECT);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "   "})
+    void rejectRequiresReason(String reason) {
+        RequestRoot request = newRequest();
+        request.verify(NOW);
+
+        assertReasonRequired(request, () -> request.reject(reason, LATER), RequestAction.REJECT);
+    }
+
     // policy
 
     @Test
@@ -151,22 +226,19 @@ class RequestRootTest {
         assertNotImplemented(() -> request.publish(new PublicationNumber(), NOW));
     }
 
-    @Test
-    void deleteIsNotImplemented() {
-        RequestRoot request = newRequest();
-
-        assertNotImplemented(() -> request.delete("reason", NOW));
-    }
-
-    @Test
-    void rejectIsNotImplemented() {
-        RequestRoot request = newRequest();
-
-        assertNotImplemented(() -> request.reject("reason", NOW));
-    }
-
     private static RequestRoot newRequest() {
         return RequestRoot.create("name", "content", POLICY, NOW);
+    }
+
+    private static void assertReasonRequired(RequestRoot request, Runnable action, RequestAction expectedAction) {
+        RequestState stateBefore = request.getState();
+        var historyBefore = request.getHistory();
+
+        assertThatThrownBy(action::run)
+                .isInstanceOfSatisfying(ReasonRequiredException.class,
+                        e -> assertThat(e.getAction()).isEqualTo(expectedAction));
+        assertThat(request.getState()).isEqualTo(stateBefore);
+        assertThat(request.getHistory()).isEqualTo(historyBefore);
     }
 
     private static void assertInvalidTransition(RequestRoot request,
