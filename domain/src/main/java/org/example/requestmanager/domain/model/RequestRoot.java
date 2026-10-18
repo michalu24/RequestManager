@@ -1,5 +1,6 @@
 package org.example.requestmanager.domain.model;
 
+import org.example.requestmanager.domain.exception.ContentNotEditableException;
 import org.example.requestmanager.domain.exception.InvalidTransitionException;
 import org.example.requestmanager.domain.exception.ReasonRequiredException;
 import org.example.requestmanager.domain.transition.TransitionPolicy;
@@ -8,6 +9,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.example.requestmanager.domain.model.RequestAction.ACCEPT;
@@ -17,8 +19,11 @@ import static org.example.requestmanager.domain.model.RequestAction.PUBLISH;
 import static org.example.requestmanager.domain.model.RequestAction.REJECT;
 import static org.example.requestmanager.domain.model.RequestAction.VERIFY;
 import static org.example.requestmanager.domain.model.RequestState.CREATED;
+import static org.example.requestmanager.domain.model.RequestState.VERIFIED;
 
 public class RequestRoot {
+
+    private static final Set<RequestState> EDITABLE_STATES = Set.of(CREATED, VERIFIED);
 
     private final RequestId id;
     private final String name;
@@ -88,7 +93,11 @@ public class RequestRoot {
     }
 
     public void editContent(String content) {
-        throw new RuntimeException("Not Implemented");
+        requireNotBlank(content, "content");
+        if (!EDITABLE_STATES.contains(state)) {
+            throw new ContentNotEditableException(state);
+        }
+        this.content = content;
     }
 
     public void verify(Instant now) {
